@@ -1,6 +1,6 @@
 ---
 name: Bio-BigFile
-version: 1.01
+version: 1.02
 author:
   - 'Lincoln Stein <lincoln.stein@gmail.com>'
 abstract: Manipulate Jim Kent's BigWig and BigBed index files for genomic features.
@@ -9,9 +9,13 @@ resources:
   license: http://dev.perl.org/licenses/
 requires:
   Bio::Root::Version: 1.005009001
+  IO::String: 0
   perl: 5.008
 build_requires:
   ExtUtils::CBuilder: 0
+recommends:
+  LWP: 0
+  URI::URL: 0
 provides:
   Bio::DB::BigBed:
     file: lib/Bio/DB/BigBed.pm
@@ -27,7 +31,7 @@ provides:
     file: lib/Bio/DB/BigBed.pm
   Bio::DB::BigFile:
     file: lib/Bio/DB/BigFile.pm
-    version: 1.01
+    version: 1.02
   Bio::DB::BigFile::BinIterator:
     file: lib/Bio/DB/BigFile/Iterators.pm
   Bio::DB::BigFile::Constants:
@@ -65,6 +69,8 @@ provides:
   Bio::DB::BigWigSet:
     file: lib/Bio/DB/BigWigSet.pm
   Bio::DB::BigWigSet::Iterator:
+    file: lib/Bio/DB/BigWigSet.pm
+  Bio::DB::BigWigSet::Segment:
     file: lib/Bio/DB/BigWigSet.pm
   Bio::DB::bbiFile:
     file: lib/Bio/DB/BigFile.pm

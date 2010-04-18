@@ -1,7 +1,14 @@
-/* $Id: BigFile.xs 22799 2010-03-12 04:15:45Z lstein $ */
+/* $Id: BigFile.xs 23059 2010-04-18 21:32:06Z lstein $ */
 
 #include <unistd.h>
 #include <math.h>
+
+#ifdef __APPLE__
+#include <crt_externs.h>
+  #ifndef environ
+    #define environ  (*_NSGetEnviron())
+  #endif
+#endif
 
 #include "common.h"
 #include "linefile.h"
@@ -15,7 +22,6 @@
 #include "udc.h"
 #include "asParse.h"
 
-
 /* Let Perl redefine these */
 #undef TRUE
 #undef FALSE
@@ -27,11 +33,6 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-
-/* work around a problem on older MacOS systems */
-#ifndef _environ
-#define _environ environ
-#endif
 
 #ifdef FCGI
  #include <fcgi_stdio.h>
@@ -96,9 +97,19 @@ void
 bf_udcSetDefaultDir(packname="Bio::DB::BigFile",path)
   char       *packname
   char       *path
+  PREINIT:
+  static char udcDir[4096];
   CODE:
-  udcSetDefaultDir(path);
+  strncpy(udcDir,path,sizeof(udcDir)-1);
+  udcSetDefaultDir(udcDir);
 
+char*
+bf_udcGetDefaultDir(packname="Bio::DB::BigFile")
+  char       *packname
+  CODE:
+  RETVAL = udcDefaultDir();
+  OUTPUT:
+  RETVAL
 
 Bio::DB::bbiFile
 bf_bigWigFileOpen(packname="Bio::DB::BigFile",filename)
