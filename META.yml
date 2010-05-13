@@ -1,6 +1,6 @@
 ---
 name: Bio-BigFile
-version: 1.02
+version: 1.03
 author:
   - 'Lincoln Stein <lincoln.stein@gmail.com>'
 abstract: Manipulate Jim Kent's BigWig and BigBed index files for genomic features.
@@ -31,7 +31,7 @@ provides:
     file: lib/Bio/DB/BigBed.pm
   Bio::DB::BigFile:
     file: lib/Bio/DB/BigFile.pm
-    version: 1.02
+    version: 1.03
   Bio::DB::BigFile::BinIterator:
     file: lib/Bio/DB/BigFile/Iterators.pm
   Bio::DB::BigFile::Constants:
