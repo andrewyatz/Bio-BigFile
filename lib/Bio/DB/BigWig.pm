@@ -201,7 +201,7 @@ sub new {
     my $self = shift;
     my %args = $_[0] =~ /^-/ ? @_ : (-bigwig=>shift);
 
-    my $bw_path       = $args{-bigwig}  or croak "-bigwig argument required";
+    my $bw_path       = $args{-bigwig}||$args{-dsn}  or croak "-bigwig argument required";
     my $fa_path       = $args{-fasta};
     my $dna_accessor  = $self->new_dna_accessor($fa_path);
     
@@ -281,7 +281,7 @@ sub segment {
     my $size = $self->bw->chromSize($seqid) or return;
 
     $start ||= 1;
-    $end   ||= $self->bw->chromSize($seqid);
+    $end   ||= $size-1;
 
     return unless $start >= 1 && $start < $size;
     return unless $end   >= 1 && $end   < $size;
@@ -487,6 +487,32 @@ summary hash across the entire region. They also have a
 get_seq_stream() method which returns a feature iterator across the
 region they cover.
 
+ my $summary = $c->score;
+
+To get the mean and stdev across the entire chromosome containing the
+summary feature, call its chr_mean() and chr_stdev() methods:
+
+ my $mean  = $c->chr_mean;
+ my $stdev = $c->chr_stdev;
+
+To get the global mean and stdev across the entire genome containing
+the summary feature, call its global_mean() and global_stdev() methods:
+
+ my $mean  = $c->global_mean;
+ my $stdev = $c->global_stdev;
+
+The summary object's chr_stats() and global_stats() methods return a
+hashref containing the statistical summary for the chromosome and
+genome respectively.
+
+ my $stats  = $c->global_stats;
+ my $stats = $c->chr_stats;
+
+To receive the underlying bigwig database from a summary feature, you
+may call its bigwig() method:
+
+  my $bigfile = $c->bigwig;
+
 If the argument -iterator=>1 is present, then instead of returning an
 array of features, the method call will return a single object that
 has a next_seq() method. Each time next_seq() is called it will return
@@ -660,8 +686,13 @@ sub get_seq_stream {
 
     # now deal with the problem of the user not specifying either the
     # start or the end position
+    my $size           = $self->bw->chromSize($options{-seq_id});
     $options{-start} ||= 1;   # that was easy!
-    $options{-end}   ||= $self->bw->chromSize($options{-seq_id});
+    $options{-end}   ||= $size;
+
+    # clip
+    $options{-start} = 1     if $options{-start} < 1;
+    $options{-end}   = $size if $options{-end}   > $size;
     
     return unless $options{-seq_id} && $options{-start} && $options{-end};
 
@@ -844,6 +875,7 @@ statistical_summary() method.
 
 sub binMean {
     my $score = shift;
+    return unless $score->{validCount};
     $score->{sumData}/$score->{validCount};
 }
 
@@ -936,7 +968,7 @@ sub seq {
 
 sub primary_id {
     my $self = shift;
-    my $id   = join (':',$self->seq_id,$self->start,$self->end,$self->SUPER::type);
+    my $id   = join (':',$self->seq_id,$self->start,$self->end,$self->type);
     if (my $dbid = $self->attributes('dbid')) {
 	return "$dbid:$id";
     } else {
@@ -1024,17 +1056,110 @@ sub statistical_summary {
 					   $bins);
 }
 
+sub gff3_string {
+    my $self = shift;
+    {
+	no warnings;
+	local *Bio::DB::BigWig::Summary::score = \&mean_score;
+	my $string  = $self->SUPER::gff3_string(@_);
+	chomp($string);
+	my $stats   = $self->statistical_summary(1000);
+	my @coverage = map {sprintf('%.4f',Bio::DB::BigWig::binMean($_))} @$stats;
+	$string .= ";coverage=".join('%2C',@coverage);
+	$string .= "\n";
+	return $string;
+    }
+}
+
 sub score {
     my $self = shift;
     my $arry = $self->statistical_summary(1);
     return $arry->[0];
 }
 
+
+sub mean_score { 
+    my $self = shift;
+    my $arry = $self->statistical_summary(1);
+    my $score = $arry->[0];
+    my $count = $score->{validCount} or return 0;
+    return sprintf('%0.4f',$score->{sumData}/$count);
+};
+
 sub get_seq_stream {
     my $self = shift;
     return $self->{bf}->get_seq_stream(-seq_id=>$self->seq_id,
 				       -start =>$self->start,
 				       -end   =>$self->end);
+}
+
+sub bigwig { shift->{bf}->bf }
+
+sub chr_mean {
+    my $self  = shift;
+    my $chr_stats = $self->chr_stats or return;
+    return Bio::DB::BigWig::binMean($chr_stats);
+}
+
+sub chr_stdev {
+    my $self  = shift;
+    my $chr_stats = $self->chr_stats or return;
+    return Bio::DB::BigWig::binStdev($chr_stats);
+}
+
+sub chr_stats {
+    my $self = shift;
+    return $self->{_chr_stats} if exists $self->{_chr_stats};
+    my $seqid = $self->seq_id;
+    my $f   = $self->{bf}->segment(-seq_id=>$seqid) or return;
+    my $s   = $self->bigwig->bigWigSummaryArrayExtended($f->seq_id,
+							$f->start-1,
+							$f->end,
+							1);
+    return $self->{_chr_stats} = $s->[0];
+}
+
+sub global_mean {
+    my $self = shift;
+    return Bio::DB::BigWig::binMean($self->global_stats);
+}
+
+sub global_stdev {
+    my $self = shift;
+    return Bio::DB::BigWig::binStdev($self->global_stats);
+}
+
+sub global_stats {
+    my $self = shift;
+    return $self->{_global_stats} if exists $self->{_global_stats};
+    my @c     = $self->{bf}->seq_ids;
+    my %stats;
+    for my $seqid (@c) {
+	my $start = 0;
+	my $end   = $self->bigwig->chromSize($seqid);
+	my $s   = $self->bigwig->bigWigSummaryArrayExtended($seqid,
+							    $start,
+							    $end,
+							    1) or next;
+	$s = $s->[0];
+	$stats{validCount} += $s->{validCount};
+	$stats{sumData}    += $s->{sumData};
+	$stats{sumSquares} += $s->{sumSquares};
+	$stats{minVal}      = _min($stats{minVal},$s->{minVal});
+	$stats{maxVal}      = _max($stats{maxVal},$s->{maxVal});
+    }
+    return $self->{_chr_stats} = \%stats;
+}
+
+sub _min {
+    return $_[0] unless defined $_[1];
+    return $_[1] unless defined $_[0];
+    return $_[0] < $_[1] ? $_[0] : $_[1];
+}
+sub _max {
+    return $_[0] unless defined $_[1];
+    return $_[1] unless defined $_[0];
+    return $_[0] < $_[1] ? $_[1] : $_[0];
 }
 
 ##################################################################
