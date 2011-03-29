@@ -6,7 +6,7 @@ build_requires:
   ExtUtils::CBuilder: 0
 configure_requires:
   Module::Build: 0.36
-generated_by: 'Module::Build version 0.3603'
+generated_by: 'Module::Build version 0.3607'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -27,7 +27,7 @@ provides:
     file: lib/Bio/DB/BigBed.pm
   Bio::DB::BigFile:
     file: lib/Bio/DB/BigFile.pm
-    version: 1.05
+    version: 1.06
   Bio::DB::BigFile::BinIterator:
     file: lib/Bio/DB/BigFile/Iterators.pm
   Bio::DB::BigFile::Constants:
@@ -79,4 +79,4 @@ requires:
   perl: 5.008
 resources:
   license: http://dev.perl.org/licenses/
-version: 1.05
+version: 1.06

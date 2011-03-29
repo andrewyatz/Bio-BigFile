@@ -1,6 +1,6 @@
 package Bio::DB::BigFile;
 
-# $Id: BigFile.pm 24649 2011-03-14 20:27:28Z lstein $
+# $Id: BigFile.pm 24747 2011-03-29 16:54:23Z lstein $
 
 use strict;
 use warnings;
@@ -598,7 +598,7 @@ use Carp 'croak';
 use base qw(DynaLoader);
 use File::Spec;
 use Bio::DB::BigFile::Constants;
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 bootstrap Bio::DB::BigFile;
 
