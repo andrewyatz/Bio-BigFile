@@ -653,6 +653,7 @@ sub features {
 
     my $iterator = $self->get_seq_stream(%options);
     return $iterator if $options{-iterator};
+    return unless $iterator;
     
     my @result;
     while (my $f = $iterator->next_seq) {
@@ -671,6 +672,7 @@ sub get_seq_stream {
     } else {
 	%options = @_;
     }
+    $options{-type} ||= $options{-types};
 
     if (ref $options{-type} && ref $options{-type} eq 'ARRAY') {
 	warn "This module only supports fetching one feature type at a time. Picking first one."

@@ -1,4 +1,4 @@
-/* $Id: BigFile.xs 23059 2010-04-18 21:32:06Z lstein $ */
+/* $Id$ */
 
 #include <unistd.h>
 #include <math.h>

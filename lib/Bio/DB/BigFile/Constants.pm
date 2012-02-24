@@ -1,6 +1,6 @@
 package Bio::DB::BigFile::Constants;
 
-# $Id: Constants.pm 22685 2010-02-09 18:34:30Z lstein $
+# $Id$
 
 use base 'Exporter';
 our @EXPORT_OK = qw(bbiSumMean bbiSumMax bbiSumMin bbiSumCoverage bbiSumStandardDeviation);
